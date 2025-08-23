@@ -148,3 +148,75 @@ docker run -d -p 5000:5000 my_flask_app
 ```
 This command runs the container in detached mode and maps port 5000 on the host to port 5000 in the container.
 
+### Environment Variables
+
+Export a variable in the host:
+
+```bash
+export FLASK_ENV=dev
+```
+
+Pass the variable to the container:
+
+```bash
+docker run -d -p 5000:5000 -e FLASK_ENV my_flask_app
+```
+
+ To find the environment variables in a running container, inspect it and check the ``Env`` array:
+
+```bash
+docker inspect <container_id> | grep Env -A 10
+```
+
+### Commands vs Entrypoint
+
+#### CMD
+
+`CMD` specifies the default command to run when the container starts. It can be overridden by providing a different command when running the container. It's usually placed at the end of the `Dockerfile` and defined as an array of strings.
+
+* Example:
+  ```Dockerfile
+  CMD ["sleep", "5"]
+  ```
+  * If run with `docker run <image>`, it will execute `sleep 5`.
+  * If run with `docker run <image> sleep 10`, it will execute `sleep 10` instead.
+
+#### ENTRYPOINT
+
+`ENTRYPOINT` specifies a command that will always run when the container starts. It cannot be overridden by providing a different command when running the container. It's usually placed at the end of the `Dockerfile` and defined as an array of strings.
+
+* Example 1:
+  ```Dockerfile
+  ENTRYPOINT ["sleep", "5"]
+  ```
+  * If run with `docker run <image>`, it will execute `sleep 5`.
+  * If run with `docker run <image> sleep 10`, it will still execute `sleep 5`.
+
+* To override the `ENTRYPOINT`, use the `--entrypoint` flag when running the container:
+  ```bash
+  docker run --entrypoint echo <image> 10
+  ```
+  * It will execute `echo 10`.
+
+* Example 2:
+  ```Dockerfile
+  ENTRYPOINT ["sleep"]
+  ```
+  * If run with `docker run <image>`, it will result in an error because no argument is provided to `sleep`.
+  * If run with `docker run <image> 10`, it will execute `sleep 10`.
+
+* Note: If you use `ENTRYPOINT`, it's a good practice to also use `CMD` to provide default arguments that can be overridden (see below).
+
+#### Using both CMD and ENTRYPOINT
+
+If both `CMD` and `ENTRYPOINT` are specified, the `CMD` will be passed as arguments to the `ENTRYPOINT`.
+
+* Example:
+  ```Dockerfile
+  FROM ubuntu
+  ENTRYPOINT ["sleep"]
+  CMD ["5"]
+  ```
+   * If run with `docker run <image>`, it will execute `sleep 5`.
+   * If run with `docker run <image> 10`, it will execute `sleep 10`.
+
