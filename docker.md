@@ -246,7 +246,9 @@ docker compose up
 
 The image below shows the architecture of a sample voting application with five components:
 
-<center><img src="./imgs/docker/sample-app-architecture.jpeg" style="width:75%; height:auto;"></center>
+<div align="center">
+  <img src="./imgs/docker/sample-app-architecture.jpeg" style="width:75%; height:auto;">
+</div>
 
 First, to run these containers individually, it would be necessary to:
 
@@ -336,7 +338,9 @@ services:
 
 However, if we want to create separate networks, for example, to separate user-generated traffic from the apps' internal traffic, we can define custom networks in the `docker-compose.yml` file:
 
-<center><img src="./imgs/docker/sample-app-networks.png" style="width:50%; height:auto;"></center>
+<div align="center">
+  <img src="./imgs/docker/sample-app-networks.png" style="width:50%; height:auto;">
+</div>
 
 * front-end network:
   * voting-app
