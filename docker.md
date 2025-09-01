@@ -470,3 +470,63 @@ or
 docker run -d --name=my_container \
 --mount type=bind,source=/host/path,target=/data my_image
 ```
+
+## Docker Networking
+
+Docker creates three networks automatically:
+
+* `bridge`
+  * Default
+  * Usually assigns IPs in the range 172.17.0.0/16
+  * Containers can access each other using their IP addresses
+* `none`
+  * Containers are not attached to any network, they run isolated
+* `host`
+  * This removes the isolation between the container and the host (for example, running an app in a container in port 5000 will automatically expose it in the host's network without port mapping)
+
+By default, a container is attached to the `bridge` network.
+
+To connect it to a different network, you can use the `--network` flag:
+
+```bash
+docker run --network=none my_image
+docker run --network=host my_image
+```
+
+You can create your own network using the `docker network create` command:
+
+```bash
+docker network create     \
+  --driver bridge         \
+  --subnet 182.18.0.0/16  \
+  --gateway 182.18.0.1    \
+  custom_isolated_network
+```
+
+Then, you can connect your containers to this network:
+
+```bash
+docker run --network=custom_isolated_network my_image
+```
+
+To inspect a running container, use the `docker inspect` command:
+
+```bash
+docker inspect <container_id>
+```
+
+This will provide detailed information about the container, including its network settings, mounted volumes, and more.
+
+All containers in a docker network can resolve each other using their container names as hostnames.
+
+To list the existing networks:
+
+```bash
+docker network ls
+```
+
+To inspect a network:
+
+```bash
+docker network inspect <network_name>
+```
