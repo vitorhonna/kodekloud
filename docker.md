@@ -361,6 +361,9 @@ services:
       - back-end
   db:
     image: postgres:9.4
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
     networks:
       - back-end
   vote:
