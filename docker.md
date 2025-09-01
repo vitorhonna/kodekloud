@@ -220,3 +220,166 @@ If both `CMD` and `ENTRYPOINT` are specified, the `CMD` will be passed as argume
    * If run with `docker run <image>`, it will execute `sleep 5`.
    * If run with `docker run <image> 10`, it will execute `sleep 10`.
 
+## Docker Compose
+
+The `docker-compose.yml` is a docker configuration file in YAML format. It defines the necessary configuration to run a Docker application.
+
+Example:
+
+```yml
+services:
+  web:
+    image: "honna/simple-webapp"
+  database:
+    image: "mongodb"
+  messaging:
+    image: "redis:alpine"
+  orchestration:
+    imagem: "ansible"
+```
+
+Then, to start the services defined in the `docker-compose.yml` file, run:
+
+```bash
+docker compose up
+```
+
+The image below shows the architecture of a sample voting application with five components:
+
+<center><img src="./imgs/docker/sample-app-architecture.jpeg" style="width:75%; height:auto;"></center>
+
+First, to run these containers individually, it would be necessary to:
+
+```bash
+docker run -d --name=redis redis
+docker run -d --name=db postgres
+docker run -d --name=vote -p 5000:80 voting-app
+docker run -d --name=result -p 5001:80 result-app
+docker run -d --name=worker worker
+```
+
+This would run the containers, but it wouldn't link them together. That means that they won't be able to communicate with one another and the application (as a whole) would not work.
+
+### Linking Containers
+
+Back in the day, we used the `--link` flag to link containers together:
+
+```bash
+docker run -d --name=redis redis
+docker run -d --name=db postgres
+docker run -d --name=vote -p 5000:80 --link redis:redis voting-app
+docker run -d --name=result -p 5001:80 --link db:db result-app
+docker run -d --name=worker --link db:db --link redis:redis worker
+```
+
+But that's now DEPRECATED.
+
+Then, it evolved to Docker Compose v1, where the links could be specified in a `docker-compose.yml` file:
+
+```yml
+redis:
+  image: redis
+db:
+  image: postgres:9.4
+vote:
+  image: voting-app # Or build: ./vote (if it's local code and not an image)
+  ports:
+    - 5000:80
+  links:
+   - redis
+result:
+  image: result-app # Or build: ./result
+  ports:
+    - 5001:80
+  links:
+    - db
+worker:
+  image: worker # Or build: ./worker
+  links:
+    - db
+    - redis
+```
+
+NOTE: `db:db` = `db`
+
+But then Docker Compose also evolved (v2, v3...) and now uses a different approach for networking and service discovery, making it easier to manage multi-container applications without the need for explicit links.
+
+In Docker Compose v2 and later, all containers are automatically connected to a default bridged network, and they can communicate with each other using their service names as hostnames.
+
+It also introduces the concept of "depends_on", which allows you to specify dependencies between services.
+
+NOTE: In the most recent version of Docker Compose, the version does not have to be specified in the first line of the `docker-compose.yml` file.
+
+So, the previous example can be rewritten to:
+
+```yml
+services:
+  redis:
+    image: redis
+  db:
+    image: postgres:9.4
+  vote:
+    image: voting-app # Or build: ./vote (if it's local code and not an image)
+    ports:
+      - 5000:80
+    depends_on:
+      - redis
+  result:
+    image: result-app # Or build: ./result
+    ports:
+      - 5001:80
+  worker:
+    image: worker # Or build: ./worker
+```
+
+### Networks in Docker Compose
+
+However, if we want to create separate networks, for example, to separate user-generated traffic from the apps' internal traffic, we can define custom networks in the `docker-compose.yml` file:
+
+<center><img src="./imgs/docker/sample-app-networks.png" style="width:50%; height:auto;"></center>
+
+* front-end network:
+  * voting-app
+  * result-app
+
+* back-end network:
+  * voting-app
+  * result-app
+  * redis
+  * db
+  * worker
+
+```yml
+services:
+  redis:
+    image: redis
+    networks:
+      - back-end
+  db:
+    image: postgres:9.4
+    networks:
+      - back-end
+  vote:
+    image: voting-app # Or build: ./vote (if it's local code and not an image)
+    ports:
+      - 5000:80
+    depends_on:
+      - redis
+    networks:
+      - front-end
+      - back-end
+  result:
+    image: result-app # Or build: ./result
+    ports:
+      - 5001:80
+    networks:
+      - front-end
+      - back-end
+  worker:
+    image: worker # Or build: ./worker
+    networks:
+      - back-end
+networks:
+  front-end:
+  back-end:
+```
