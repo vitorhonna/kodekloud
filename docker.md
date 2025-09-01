@@ -390,3 +390,83 @@ networks:
   front-end:
   back-end:
 ```
+
+## Docker Engine
+
+The Docker Engine is the core component of Docker, responsible for building, running, and managing containers. It consists of a server (the Docker daemon), a REST API, and a command-line interface (CLI) for interacting with the daemon.
+
+Na CLI, é possível executar comandos especificando o host:
+
+```bash
+docker -H ssh://root@172.16.1.143 ps
+```
+
+Docker uses namespaces to isolate the workspaces.
+
+Processes inside docker containers run using the same resources as the underlying host. There is no default resource limits for containers. But it can be specified using control groups (cgroups) configured by the flags:
+
+### Limit CPU
+
+```bash
+docker run -d --name=my_container --cpus=".5" my_image
+```
+The container will not use more than 50% of the available CPU at any given time.
+
+### Limit Memory
+
+```bash
+docker run -d --name=my_container --memory="256m" my_image
+```
+The container will not use more than 256MB of memory at any given time.
+
+## Docker Storage
+
+Docker files live inside the `/var/lib/docker` directory on the host machine. This directory contains all the images, containers, volumes, and other data managed by Docker. It's important to note that this directory is managed by Docker, and users should not modify its contents directly.
+
+Docker uses a layered architecture. That is, for each command in the Dockerfile, a new layer is created. Each layer is read-only, except for the top layer, which is writable.
+
+When a new Dockerfile is created, Docker will try to reuse the cached layers from previous builds. This means that if a layer hasn't changed, Docker can use the cached version instead of rebuilding it, which speeds up the build process and saves disk space.
+
+The image layers are read-only. When you run a container from an image, a new writable layer is added on top of the image layers (all containers running from an image share the same image layers). Any changes made to the container (like creating files, installing software, etc.) are stored in this writable layer. When a container is destroyed, this writable layer is also destroyed.
+
+To persist data from a container, you can use Docker volumes. Volumes are stored outside the container's filesystem and can be shared between containers. This means that even if a container is destroyed, the data in the volume remains intact.
+
+```bash
+docker volume create my_volume
+```
+
+This will create a volume under: `/var/lib/docker/volumes/my_volume`
+
+Then, it can be mounted inside the container when running it:
+
+```bash
+docker run -d --name=my_container -v my_volume:/data my_image
+```
+
+This is called **volume mounting**.
+
+NOTE: If a volume is not yet created, Docker will automatically create a new volume for you when you run a container with the `-v` flag.
+
+To use data store at a different location, you can specify the host path when creating the volume:
+
+```bash
+docker run -d --name=my_container -v /host/path:/data my_image
+```
+
+This is called **bind mounting**.
+
+IMPORTANT: Using the `-v` is the old way of doing things.
+
+A more explicit way of defining volumes is by using the `--mount` flag and the specifying the options:
+
+```bash
+docker run -d --name=my_container \
+--mount type=volume,source=my_volume,target=/data my_image
+```
+
+or
+
+```bash
+docker run -d --name=my_container \
+--mount type=bind,source=/host/path,target=/data my_image
+```
