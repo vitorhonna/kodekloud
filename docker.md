@@ -530,3 +530,71 @@ To inspect a network:
 ```bash
 docker network inspect <network_name>
 ```
+
+## Docker Registry
+
+The Docker Registry is a central repository where images are stored.
+
+Example of a fully qualified image reference:
+
+```bash
+...
+image: docker.io/library/ubuntu:latest
+...
+```
+
+It contains: `<registry>`/`<user-account>`/`<image-name>:<tag>`
+
+When no username or organization is specified, Docker assumes the image is stored in Docker Hub (docker.io). If you create your own images on Docker Hub or within an organization, your username or organization name will be prefixed to the image name.
+
+### Private Registries
+
+#### Working with private registries
+
+To work with a private registry, you need to log in to the registry using the `docker login` command:
+
+```bash
+docker login <private-registry.io>
+```
+
+You will be prompted to enter your username and password.
+
+Once logged in, you can push and pull images to and from the private registry just like you would with Docker Hub.
+
+```bash
+docker run <private-registry.io/apps/internal-app>
+```
+
+#### Deploy a Private Registry
+
+The Docker registry itself is an application available as an image called `registry`. It exposes its API on port `5000`:
+
+```bash
+docker run -d -p 5000:5000 --name registry registry:2
+```
+
+To push images to the private registry, you need to tag them with the registry's address:
+
+```bash
+docker tag my_image localhost:5000/my_image
+```
+
+Then, push the image to it:
+
+```bash
+docker push localhost:5000/my_image
+```
+
+In the same network, it will be possible to pull the image from the private registry:
+
+* Same machine
+
+```bash
+docker pull localhost:5000/my_image
+```
+
+* Different machine (same network)
+
+```bash
+docker pull <ip-or-domain_name>:5000/my_image
+```
